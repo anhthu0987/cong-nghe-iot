@@ -1,0 +1,209 @@
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
+from accounts.models import DriverProfile
+
+class VehicleType(models.Model):
+    class Category(models.TextChoices):
+        TRUCK = "TRUCK", "Truck"
+        BUS = "BUS", "Bus"
+
+    name = models.CharField(max_length=100)
+
+    category = models.CharField(
+        max_length=10,
+        choices=Category.choices,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.name
+
+class Vehicle(models.Model):
+    gross_vehicle_weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_sleeper = models.BooleanField(default=False)
+
+    @property
+    def required_license_class(self):
+        from .licensing import required_license_class
+        return required_license_class(self.vehicle_type.category, self.gross_vehicle_weight,
+                                      self.passenger_capacity, self.is_sleeper)
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        INACTIVE = "INACTIVE", "Inactive"
+        LIQUIDATED = "LIQUIDATED", "Liquidated"
+
+    vehicle_type = models.ForeignKey(
+        VehicleType,
+        on_delete=models.PROTECT,
+        related_name="vehicles",
+    )
+
+    license_plate = models.CharField(
+        max_length=20,
+        unique=True,
+    )
+
+    brand = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    model = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    manufacture_year = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    load_capacity = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    passenger_capacity = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.license_plate
+
+
+class Device(models.Model):
+    def clean(self):
+        super().clean()
+        if self.pk:
+            old = type(self).objects.filter(pk=self.pk).first()
+            if old and old.vehicle_id != self.vehicle_id and old.vehicle.driving_sessions.filter(status='STARTED').exists():
+                raise ValidationError({'vehicle': 'Cần kết thúc phiên lái trước khi chuyển thiết bị sang xe khác.'})
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.pk:
+                type(self).objects.select_for_update().filter(pk=self.pk).first()
+                self.clean()
+            super().save(*args, **kwargs)
+
+    # Only the hash is stored; the provisioning command prints the secret once.
+    api_key_hash = models.CharField(max_length=128, blank=True, default='', editable=False)
+    # Indexed fingerprint of the random token for identification without a device code.
+    api_key_digest = models.CharField(max_length=64, unique=True, null=True, blank=True, editable=False)
+
+    class Status(models.TextChoices):
+        ONLINE = "ONLINE", "Online"
+        OFFLINE = "OFFLINE", "Offline"
+        MAINTENANCE = "MAINTENANCE", "Maintenance"
+
+    vehicle = models.OneToOneField(
+        Vehicle,
+        on_delete=models.CASCADE,
+        related_name="device",
+    )
+
+    device_code = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    name = models.CharField(
+        max_length=100,
+    )
+
+    status = models.CharField(
+        max_length=15,
+        choices=Status.choices,
+        default=Status.OFFLINE,
+    )
+
+    last_seen_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.device_code
+
+class DriverVehicleAssignment(models.Model):
+    driver = models.ForeignKey(
+        DriverProfile,
+        on_delete=models.PROTECT,
+        related_name="vehicle_assignments",
+    )
+
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,
+        related_name="driver_assignments",
+    )
+
+    start_at = models.DateTimeField()
+
+    end_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.pk:
+                old = type(self).objects.select_for_update().get(pk=self.pk)
+                if old.driving_sessions.exists() and any(
+                    getattr(old, field) != getattr(self, field)
+                    for field in ('driver_id', 'vehicle_id', 'start_at')
+                ):
+                    raise ValidationError('Phân công đã có phiên lái: không được đổi tài xế, xe hoặc thời gian bắt đầu.')
+            super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.driver.full_name} - {self.vehicle.license_plate}"
