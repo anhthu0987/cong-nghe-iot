@@ -1,10 +1,134 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">Tổng quan</p><h1>Xin chào, {{ user.username }}</h1><p class="subtitle">{% if is_admin %}Theo dõi đội xe và xử lý công việc trong ngày.{% else %}Hồ sơ, chuyến đi và thông tin của bạn ở cùng một nơi.{% endif %}</p></div><span class="date-label">{% now "d/m/Y" %}</span></div>
-<div class="stats">{% for label, count in stats %}<div class="stat"><div class="stat-top">{{ label }}</div><div class="stat-number">{{ count }}</div></div>{% endfor %}</div>
-<div class="quick-links" aria-label="Truy cập nhanh">
-  {% if is_admin %}<a href="{% url 'frontend:drivers' %}?status=PENDING"><span><strong>Hồ sơ chờ duyệt</strong><small>Kiểm tra thông tin tài xế</small></span><span aria-hidden="true">→</span></a><a href="{% url 'frontend:violations' %}?status=PENDING"><span><strong>Vi phạm chờ xác nhận</strong><small>Xem bằng chứng và xử lý</small></span><span aria-hidden="true">→</span></a><a href="{% url 'frontend:assignments' %}"><span><strong>Phân công xe</strong><small>Quản lý thời hạn sử dụng</small></span><span aria-hidden="true">→</span></a>
-  {% else %}<a href="{% url 'frontend:profile' %}"><span><strong>Hồ sơ của tôi</strong><small>Xem và cập nhật thông tin</small></span><span aria-hidden="true">→</span></a><a href="{% url 'frontend:vehicles' %}"><span><strong>Xe được giao</strong><small>Phương tiện đang được sử dụng</small></span><span aria-hidden="true">→</span></a><a href="{% url 'frontend:violations' %}"><span><strong>Vi phạm của tôi</strong><small>Theo dõi kết quả xác nhận</small></span><span aria-hidden="true">→</span></a>{% endif %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">TỔNG QUAN HỆ THỐNG</p>
+    <h1>Xin chào, {{ user.username }}</h1>
+    <p class="subtitle">{% if is_admin %}Theo dõi vận hành đội xe và xử lý công việc trực quan trong ngày.{% else %}Hồ sơ, phương tiện và lịch sử chuyến đi của bạn.{% endif %}</p>
+  </div>
+  <span class="date-label">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+    {% now "d/m/Y" %}
+  </span>
 </div>
-<section class="card"><div class="card-header"><div><h2>Phiên lái gần đây</h2><small>Lịch sử chuyến đi mới nhất</small></div><a class="row-link" href="{% url 'frontend:sessions' %}">Xem tất cả →</a></div><div class="table-scroll" tabindex="0" role="region" aria-label="Phiên lái gần đây"><table><thead><tr><th scope="col">Tài xế</th><th scope="col">Phương tiện</th><th scope="col">Bắt đầu</th><th scope="col">Trạng thái</th></tr></thead><tbody>{% for session in sessions %}<tr><td>{{ session.assignment.driver.full_name }}</td><td>{{ session.assignment.vehicle.license_plate }}</td><td>{{ session.started_at|date:'d/m/Y H:i' }}</td><td><span class="tag {% if session.status == 'STARTED' %}info{% else %}neutral{% endif %}">{% if session.status == 'STARTED' %}Đang lái{% else %}Đã kết thúc{% endif %}</span></td></tr>{% empty %}<tr><td colspan="4"><div class="empty-state"><span class="empty-symbol" aria-hidden="true">≡</span><h2>Chưa có phiên lái</h2><p>Lịch sử sẽ xuất hiện khi có chuyến đi được ghi nhận.</p></div></td></tr>{% endfor %}</tbody></table></div></section>
+
+<div class="stats">
+  {% for label, count in stats %}
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">{{ label }}</span>
+        <span class="stat-icon" aria-hidden="true">
+          {% if 'Phương tiện' in label or 'xe' in label|lower %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14v10Z"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+          {% elif 'đang lái' in label|lower %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {% elif 'kết thúc' in label|lower %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          {% elif 'chờ duyệt' in label|lower %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>
+          {% else %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          {% endif %}
+        </span>
+      </div>
+      <div class="stat-number">{{ count }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="quick-links" aria-label="Truy cập nhanh">
+  {% if is_admin %}
+    <a href="{% url 'frontend:drivers' %}?status=PENDING" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Hồ sơ chờ duyệt</strong>
+        <small>Kiểm tra thông tin tài xế</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'frontend:violations' %}?status=PENDING" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Vi phạm chờ xác nhận</strong>
+        <small>Xem bằng chứng và xử lý</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'frontend:assignments' %}" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Phân công xe</strong>
+        <small>Quản lý thời hạn và bàn giao</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+  {% else %}
+    <a href="{% url 'frontend:profile' %}" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Hồ sơ của tôi</strong>
+        <small>Xem và cập nhật thông tin</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'frontend:vehicles' %}" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Xe được giao</strong>
+        <small>Phương tiện đang được sử dụng</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+    <a href="{% url 'frontend:violations' %}" class="quick-link-card">
+      <div class="quick-link-text">
+        <strong>Vi phạm của tôi</strong>
+        <small>Theo dõi kết quả xác nhận</small>
+      </div>
+      <span class="quick-link-arrow" aria-hidden="true">→</span>
+    </a>
+  {% endif %}
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <div>
+      <h2>Phiên lái gần đây</h2>
+      <small>Lịch sử các chuyến đi mới nhất trong hệ thống</small>
+    </div>
+    <a class="row-link" href="{% url 'frontend:sessions' %}">Xem tất cả →</a>
+  </div>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Phiên lái gần đây">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Tài xế</th>
+          <th scope="col">Phương tiện</th>
+          <th scope="col">Bắt đầu</th>
+          <th scope="col">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for session in sessions %}
+          <tr>
+            <td><strong>{{ session.assignment.driver.full_name }}</strong></td>
+            <td><code>{{ session.assignment.vehicle.license_plate }}</code></td>
+            <td>{{ session.started_at|date:'d/m/Y H:i' }}</td>
+            <td>
+              <span class="tag {% if session.status == 'STARTED' %}info{% else %}neutral{% endif %}">
+                {% if session.status == 'STARTED' %}Đang lái{% else %}Đã kết thúc{% endif %}
+              </span>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4">
+              <div class="empty-state">
+                <span class="empty-symbol" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                </span>
+                <h2>Chưa có phiên lái</h2>
+                <p>Lịch sử sẽ xuất hiện khi có chuyến đi được ghi nhận.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

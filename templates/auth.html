@@ -1,5 +1,34 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="auth-intro"><p class="eyebrow">SAVELIFE</p><h1>{% if register %}Bắt đầu cùng SaveLife{% else %}Chào mừng trở lại{% endif %}</h1><p class="subtitle">{% if register %}Tạo tài khoản để quản lý hồ sơ và theo dõi chuyến đi của bạn.{% else %}Đăng nhập để tiếp tục công việc của bạn.{% endif %}</p></div>
-<section class="card auth"><div class="card-body"><h2>{{ title }}</h2><form method="post">{% csrf_token %}{% include 'includes/fields.html' %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}<button class="button primary auth-submit">{{ title }} <span aria-hidden="true">→</span></button></form><div class="auth-links">{% if register %}<span>Đã có tài khoản?</span><a href="{% url 'frontend:login' %}">Đăng nhập</a>{% else %}<span>Bạn là tài xế mới?</span><a href="{% url 'frontend:register' %}">Tạo tài khoản</a>{% endif %}</div></div></section>
+<div class="auth-intro">
+  <div class="auth-brand-logo" aria-hidden="true">
+    <svg width="42" height="42" viewBox="0 0 34 34" fill="none">
+      <rect width="34" height="34" rx="9" fill="#2563EB"/>
+      <path d="M9 10.5L17 25L25 10.5H20.8L17 18.8L13.2 10.5H9Z" fill="white"/>
+    </svg>
+  </div>
+  <p class="eyebrow">VIA FLEET</p>
+  <h1>{% if register %}Bắt đầu cùng VIA Fleet{% else %}Đăng nhập VIA Fleet{% endif %}</h1>
+  <p class="subtitle">{% if register %}Tạo tài khoản để cập nhật hồ sơ và theo dõi chuyến đi của bạn.{% else %}Hệ thống quản lý vận tải &amp; giám sát tài xế thông minh.{% endif %}</p>
+</div>
+<section class="card auth">
+  <div class="card-body">
+    <h2>{{ title }}</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% include 'includes/fields.html' %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button class="button primary auth-submit">{{ title }} <span aria-hidden="true">→</span></button>
+    </form>
+    <div class="auth-links">
+      {% if register %}
+        <span>Đã có tài khoản?</span>
+        <a href="{% url 'frontend:login' %}">Đăng nhập</a>
+      {% else %}
+        <span>Bạn là tài xế mới?</span>
+        <a href="{% url 'frontend:register' %}">Đăng ký tài khoản</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
 {% endblock %}
