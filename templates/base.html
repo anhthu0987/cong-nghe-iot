@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f7f9">
-  <title>{{ title }} · SaveLife</title>
+  <meta name="theme-color" content="#0F172A">
+  <title>{{ title }} · VIA Fleet</title>
   <link rel="stylesheet" href="{% static 'app.css' %}">
   <link rel="stylesheet" href="{% static 'css/server.css' %}">
   <script src="{% static 'server.js' %}" defer></script>
@@ -17,15 +17,54 @@
   <div class="shell">
     <header class="topbar">
       <div class="topbar-start">
-        {% if user.is_authenticated %}<button class="icon-button mobile-toggle" id="menu" type="button" aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>{% endif %}
-        <a class="mobile-brand" href="{% url 'frontend:home' %}">SaveLife</a>
-        <span class="breadcrumb">{{ title }}</span>
+        {% if user.is_authenticated %}<button class="icon-button mobile-toggle" id="menu" type="button" aria-label="Mở menu" aria-controls="sidebar" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>{% endif %}
+        <a class="mobile-brand" href="{% url 'frontend:home' %}">
+          <span class="mobile-brand-icon">
+            <svg width="22" height="22" viewBox="0 0 34 34" fill="none">
+              <rect width="34" height="34" rx="8" fill="#2563EB"/>
+              <path d="M9 10.5L17 25L25 10.5H20.8L17 18.8L13.2 10.5H9Z" fill="white"/>
+            </svg>
+          </span>
+          <span>VIA Fleet</span>
+        </a>
+        <nav class="breadcrumb-wrap" aria-label="Đường dẫn điều hướng">
+          {% if request.resolver_match.url_name != 'dashboard' and title != 'Tổng quan' %}
+            <a class="breadcrumb-home" href="{% url 'frontend:dashboard' %}">Tổng quan</a>
+            <span class="breadcrumb-slash" aria-hidden="true">/</span>
+          {% endif %}
+          <span class="breadcrumb">{{ title }}</span>
+        </nav>
       </div>
       <div class="topbar-right">
         {% if user.is_authenticated %}
-        <a class="account-summary" href="{% url 'frontend:password-change' %}" aria-label="Tài khoản {{ user.username }} — đổi mật khẩu"><span class="account-avatar" aria-hidden="true">{% if account_face and account_face.face_image_url %}<img src="{{ account_face.face_image_url }}" alt="" referrerpolicy="no-referrer">{% else %}{{ user.username|first|upper }}{% endif %}</span><div><strong>{{ user.username }}</strong><small>{% if is_admin %}Quản trị viên{% else %}Tài xế{% endif %}</small></div></a>
-        <form method="post" action="{% url 'frontend:logout' %}">{% csrf_token %}<button class="button subtle">Đăng xuất</button></form>
-        {% else %}<span class="guest-caption">Quản lý vận tải</span>{% endif %}
+        <a class="account-summary" href="{% url 'frontend:password-change' %}" aria-label="Tài khoản {{ user.username }} — đổi mật khẩu">
+          <span class="account-avatar" aria-hidden="true">
+            {% if account_face and account_face.face_image_url %}
+              <img src="{{ account_face.face_image_url }}" alt="" referrerpolicy="no-referrer">
+            {% else %}
+              {{ user.username|first|upper }}
+            {% endif %}
+          </span>
+          <div class="account-info">
+            <strong>{{ user.username }}</strong>
+            <small class="account-role-badge">{% if is_admin %}Quản trị viên{% else %}Tài xế{% endif %}</small>
+          </div>
+        </a>
+        <div class="topbar-divider" aria-hidden="true"></div>
+        <form method="post" action="{% url 'frontend:logout' %}" class="topbar-logout-form">
+          {% csrf_token %}
+          <button class="button subtle topbar-logout-btn" type="submit" title="Đăng xuất">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Đăng xuất</span>
+          </button>
+        </form>
+        {% else %}
+        <span class="guest-caption">Quản lý vận tải &amp; Giám sát tài xế</span>
+        {% endif %}
       </div>
     </header>
     <main id="main" tabindex="-1">
